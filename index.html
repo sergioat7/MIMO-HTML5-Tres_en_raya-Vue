@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tres en raya">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="javascript.js" defer></script>
+    <title>Tres en raya</title>
+</head>
+
+<body>
+    <header>
+        <div>
+            <input type="radio" id="manual" name="mode" class="mode-radio"">
+            <label for=" manual"><span class="text-mode">Jugador vs Jugador</span></label>
+            <div class="breaker2"></div>
+            <input type="radio" id="automatic_easy" name="mode" class="mode-radio"" checked>
+            <label for=" automatic_easy"><span class="text-mode">Jugador vs Máquina</span> (Fácil)</label>
+            <div class="breaker"></div>
+            <input type="radio" id="automatic_medium" name="mode" class="mode-radio"">
+            <label for=" automatic_medium"><span class="text-mode">Jugador vs Máquina</span> (Medio)</label>
+            <div class="breaker2"></div>
+            <input type="radio" id="automatic_impossible" name="mode" class="mode-radio"">
+            <label for=" automatic_impossible"><span class="text-mode">Jugador vs Máquina</span> (Imposible)</label>
+        </div>
+        <h4 id="title">Iniciar partida</h4>
+    </header>
+    <div id="table_div"></div>
+    <footer>
+        <div>
+            <button class="btn btn-warning" name="restart_game" type="button"">Reiniciar partida</button>
+        </div>
+    </footer>
+
+</body>
+
+</html>

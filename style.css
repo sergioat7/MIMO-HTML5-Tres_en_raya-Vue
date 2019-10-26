@@ -1,0 +1,138 @@
+@media (min-width: 915px) {
+    .breaker {
+        display: none;
+    }
+
+    .breaker2 {
+        display: none;
+    }
+}
+
+@media (max-width: 914px) {
+    .breaker {
+        display: block;
+    }
+
+    .breaker2 {
+        display: none;
+    }
+}
+
+@media (max-width: 515px) {
+    .breaker2 {
+        display: block;
+    }
+}
+
+div {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.mode-radio {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    display: inline-block;
+    position: relative;
+    background-color: #4682B4;
+    color: white;
+    top: 10px;
+    height: 30px;
+    width: 30px;
+    border: 0;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-right: 7px;
+    outline: none;
+}
+
+.mode-radio:checked::before {
+    position: absolute;
+    font: 13px/1 'Open Sans', sans-serif;
+    left: 11px;
+    top: 7px;
+    content: '\02143';
+    transform: rotate(40deg);
+}
+
+.mode-radio:hover {
+    background-color: #B0C4DE;
+}
+
+.mode-radio:checked {
+    background-color: #4682B4;
+}
+
+.text-mode {
+    font-family: "Arial Black", Gadget, sans-serif;
+}
+
+label {
+    margin-right: 15px;
+    line-height: 32px;
+    font: 15px/1.7 'Open Sans', sans-serif;
+    color: #333;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    cursor: pointer;
+}
+
+#title {
+    text-align: center;
+    margin: 20px 0;
+}
+table {
+    margin: 50px auto;
+    position: relative;
+    width: 250px;
+    height: 250px;
+    opacity: 1;
+    border: none;
+}
+
+table tr:first-child td {
+    border-top: none;
+}
+
+table tr:last-child td {
+    border-bottom: none;
+}
+
+table tr td:first-child {
+    border-left: none;
+}
+
+table tr td:last-child {
+    border-right: none;
+}
+
+tbody {
+    display: table-row-group;
+    vertical-align: middle;
+}
+
+tr {
+    width: 100%;
+    height: 33%;
+}
+
+.normalCell {
+    width: 33%;
+    border: 5px solid black;
+}
+
+.normalCell:not(.disable):hover {
+    cursor: pointer;
+    background: #66CDAA;
+}
+
+.winCell {
+    background-color: #66CDAA;
+    width: 33%;
+    border: 5px solid black;
+}
+
+button:hover {
+    cursor: pointer;
+}
