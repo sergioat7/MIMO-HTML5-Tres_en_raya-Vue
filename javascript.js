@@ -22,7 +22,7 @@ let app = new Vue({
             this.turn = X;
             this.gameFinished = false;
             this.move = 0;
-            this.getModeSelected()
+            this.getModeSelected();
             this.writeInMainText("Iniciar partida");
             this.cells = Array((this.n * this.n)).fill(EMPTY_CELL);
             var tds = document.querySelectorAll("td");
