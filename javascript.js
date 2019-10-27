@@ -14,7 +14,7 @@ let app = new Vue({
         gameFinished: false,
         move: 0,
         mode: EASY_MODE,
-        cells: []
+        cells: Array(9).fill(EMPTY_CELL)
     },
     methods: {
 
@@ -99,7 +99,7 @@ let app = new Vue({
                 return true;
             }
         },
-    
+
         setCellClassName(x, y, z) {
             this.writeInMainText("Victoria de " + this.cells[x]);
             var cells = document.querySelectorAll("td");
@@ -123,7 +123,177 @@ let app = new Vue({
         },
 
         chooseCell() {
-            return (Math.random() * 9).toFixed();
+            if (this.mode == EASY_MODE) {
+                return (Math.random() * 9).toFixed();
+            } else {
+                var choice = this.tryToWin(O);
+                if (choice != -1) {
+                    return choice;
+                } else {
+                    choice = this.tryToWin(X);
+                    if (choice != -1) {
+                        return choice;
+                    } else {
+                        return this.mode == MEDIUM_MODE ? (Math.random() * 9).toFixed() : this.studyMove();
+                    }
+                }
+            }
+        },
+
+        tryToWin(value) {
+            //Primera fila
+            if (this.cells[0] == value && this.cells[1] == value && this.cells[2] == EMPTY_CELL) {
+                return 2;
+            } else if (this.cells[0] == value && this.cells[2] == value && this.cells[1] == EMPTY_CELL) {
+                return 1;
+            } else if (this.cells[1] == value && this.cells[2] == value && this.cells[0] == EMPTY_CELL) {
+                return 0;
+            }
+            //Segunda fila
+            else if (this.cells[3] == value && this.cells[4] == value && this.cells[5] == EMPTY_CELL) {
+                return 5;
+            } else if (this.cells[3] == value && this.cells[5] == value && this.cells[4] == EMPTY_CELL) {
+                return 4;
+            } else if (this.cells[4] == value && this.cells[5] == value && this.cells[3] == EMPTY_CELL) {
+                return 3;
+            }
+            //Tercera fila
+            else if (this.cells[6] == value && this.cells[7] == value && this.cells[8] == EMPTY_CELL) {
+                return 8;
+            } else if (this.cells[6] == value && this.cells[8] == value && this.cells[7] == EMPTY_CELL) {
+                return 7;
+            } else if (this.cells[7] == value && this.cells[8] == value && this.cells[6] == EMPTY_CELL) {
+                return 6;
+            }
+            //Primera columna
+            else if (this.cells[0] == value && this.cells[3] == value && this.cells[6] == EMPTY_CELL) {
+                return 6;
+            } else if (this.cells[0] == value && this.cells[6] == value && this.cells[3] == EMPTY_CELL) {
+                return 3;
+            } else if (this.cells[3] == value && this.cells[6] == value && this.cells[0] == EMPTY_CELL) {
+                return 0;
+            }
+            //Segunda columna
+            else if (this.cells[1] == value && this.cells[4] == value && this.cells[7] == EMPTY_CELL) {
+                return 7;
+            } else if (this.cells[1] == value && this.cells[7] == value && this.cells[4] == EMPTY_CELL) {
+                return 4;
+            } else if (this.cells[4] == value && this.cells[7] == value && this.cells[1] == EMPTY_CELL) {
+                return 1;
+            }
+            //Tercera columna
+            else if (this.cells[2] == value && this.cells[5] == value && this.cells[8] == EMPTY_CELL) {
+                return 8;
+            } else if (this.cells[2] == value && this.cells[8] == value && this.cells[5] == EMPTY_CELL) {
+                return 5;
+            } else if (this.cells[5] == value && this.cells[8] == value && this.cells[2] == EMPTY_CELL) {
+                return 2;
+            }
+            //Primera diagonal
+            else if (this.cells[0] == value && this.cells[4] == value && this.cells[8] == EMPTY_CELL) {
+                return 8;
+            } else if (this.cells[0] == value && this.cells[8] == value && this.cells[4] == EMPTY_CELL) {
+                return 4;
+            } else if (this.cells[4] == value && this.cells[8] == value && this.cells[0] == EMPTY_CELL) {
+                return 0;
+            }
+            //Segunda diagonal
+            else if (this.cells[2] == value && this.cells[4] == value && this.cells[6] == EMPTY_CELL) {
+                return 6;
+            } else if (this.cells[2] == value && this.cells[6] == value && this.cells[4] == EMPTY_CELL) {
+                return 4;
+            } else if (this.cells[4] == value && this.cells[6] == value && this.cells[2] == EMPTY_CELL) {
+                return 2;
+            }
+            //Otro
+            else {
+                return -1;
+            }
+        },
+
+        studyMove() {
+            switch (this.move) {
+                //Primer turno
+                case 1:
+                    if (this.cells[0] == X || this.cells[2] == X || this.cells[6] == X || this.cells[8] == X) {
+                        return 4;
+                    } else if (this.cells[4] == X) {
+                        return 0;
+                    } else if (this.cells[1] == X) {
+                        return 2;
+                    } else if (this.cells[3] == X) {
+                        return 6;
+                    } else {
+                        return 8;
+                    }
+                    //Segundo turno: solo debemos comprobar las opciones que no se hayan descartado anteriormente con la función tryToWin
+                    case 2:
+                        if (this.cells[0] == X && this.cells[4] == O) {
+                            if (this.cells[5] == X) {
+                                return 1;
+                            } else {
+                                return 5;
+                            }
+                        } else if (this.cells[1] == X && this.cells[2] == O) {
+                            if (this.cells[0] == X || this.cells[3] == X) {
+                                return 8;
+                            } else if (this.cells[5] == X) {
+                                return 4;
+                            } else {
+                                return 7;
+                            }
+                        } else if (this.cells[2] == X && this.cells[4] == O) {
+                            if (this.cells[3] == X) {
+                                return 1;
+                            } else {
+                                return 3;
+                            }
+                        } else if (this.cells[3] == X && this.cells[6] == O) {
+                            if (this.cells[0] == X || this.cells[1] == X) {
+                                return 8;
+                            } else if (this.cells[8] == X) {
+                                return 5;
+                            } else {
+                                return 4;
+                            }
+                        } else if (this.cells[4] == X && this.cells[0] == O) {
+                            return 6;
+                        } else if (this.cells[5] == X && this.cells[8] == O) {
+                            if (this.cells[0] == X || this.cells[7] == X) {
+                                return 4;
+                            } else if (this.cells[6] == X) {
+                                return 3;
+                            } else {
+                                return 6;
+                            }
+                        } else if (this.cells[6] == X && this.cells[4] == O) {
+                            if (this.cells[5] == X) {
+                                return 7;
+                            } else {
+                                return 3;
+                            }
+                        } else if (this.cells[7] == X && this.cells[8] == O) {
+                            if (this.cells[3] == X || this.cells[6] == X) {
+                                return 2;
+                            } else if (this.cells[2] == X) {
+                                return 1;
+                            } else {
+                                return 4;
+                            }
+                        } else if (this.cells[8] == X && this.cells[4] == O) {
+                            if (this.cells[0] == X) {
+                                return 5;
+                            } else if (this.cells[1] == X) {
+                                return 0;
+                            } else {
+                                return 7;
+                            }
+                        } else {
+                            return (Math.random() * 9).toFixed();
+                        }
+                        default:
+                            return (Math.random() * 9).toFixed();
+            }
         }
     },
     template: `
@@ -163,6 +333,4 @@ let app = new Vue({
             </footer>
         </div>
     `
-})
-
-app.resetBoard();
+});
