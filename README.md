@@ -24,4 +24,4 @@ TIC-TAC-TOE game created with Vue
 	2. Medium: the machine tries to avoid the player's victory and tries to win, but if it cannot, it chooses randomly its next move.
 	2. Difficult: the machine calculates the best movement in order to avoid player's victory and guarantee its own.
 
-![Alt text](./images/image.png "Title")
+![image](https://user-images.githubusercontent.com/23210811/68624939-3cef8a80-04d8-11ea-9c13-a1dd4dadffe6.png)
