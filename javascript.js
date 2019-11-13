@@ -9,7 +9,7 @@ const MEDIUM_MODE = "automatic_medium";
 let app = new Vue({
     el: "#app",
     data: {
-        n: 3,
+        dimension: 3,
         turn: X,
         gameFinished: false,
         move: 0,
@@ -24,7 +24,7 @@ let app = new Vue({
             this.move = 0;
             this.getModeSelected();
             this.writeInMainText("Iniciar partida");
-            this.cells = Array((this.n * this.n)).fill(EMPTY_CELL);
+            this.cells = Array((this.dimension * this.dimension)).fill(EMPTY_CELL);
             var tds = document.querySelectorAll("td");
             for (let td of tds) {
                 td.className = "normalCell";
@@ -57,58 +57,66 @@ let app = new Vue({
 
         writeCell(id) {
             Vue.set(this.cells, id, this.turn);
-            this.checkBoard();
+            this.checkBoard(this.cells, this.turn, id);
             if (this.gameFinished == false) {
                 this.turn = this.turn === X ? O : X;
                 this.writeInMainText("Turno de " + this.turn);
             }
         },
 
-        checkBoard() {
-            if (this.checkCombination(0, 1, 2)) {
-                this.setCellClassName(0, 1, 2)
-            } else if (this.checkCombination(3, 4, 5)) {
-                this.setCellClassName(3, 4, 5);
-            } else if (this.checkCombination(6, 7, 8)) {
-                this.setCellClassName(6, 7, 8);
-            } else if (this.checkCombination(0, 3, 6)) {
-                this.setCellClassName(0, 3, 6);
-            } else if (this.checkCombination(1, 4, 7)) {
-                this.setCellClassName(1, 4, 7);
-            } else if (this.checkCombination(2, 5, 8)) {
-                this.setCellClassName(2, 5, 8);
-            } else if (this.checkCombination(0, 4, 8)) {
-                this.setCellClassName(0, 4, 8);
-            } else if (this.checkCombination(2, 4, 6)) {
-                this.setCellClassName(2, 4, 6);
-            } else if (!(this.cells.includes(EMPTY_CELL))) {
+        checkBoard(cells, currentTurn, position) {
+            if (!(cells.includes(EMPTY_CELL))) {
                 this.writeInMainText("Empate");
-                var cells = document.querySelectorAll("td");
-                for (let i = 0; i < cells.length; i++) {
-                    cells[i].className = "normalCell disable";
+                var tds = document.querySelectorAll("td");
+                for (let td of tds) {
+                    td.className = "normalCell disable";
                 }
                 this.gameFinished = true;
             } else {
-                this.gameFinished = false;
+                this.gameFinished = this.checkCells(cells, currentTurn, Math.floor(position/this.dimension),  Math.floor(position%this.dimension));
             }
         },
 
-        checkCombination(x, y, z) {
-            if (this.cells[x] == this.turn && this.cells[y] == this.turn && this.cells[z] == this.turn) {
-                this.gameFinished = true;
+        checkCells(cells, value, x, y) {
+            var n = this.dimension;
+            var col=0;
+            var row=0;
+            var diag=0;
+            var rdiag=0;
+    
+            for (var i=0; i<n; i++) {
+                if (cells[(x*n)+i]===value) row++;
+                if (cells[(i*n)+y]===value) col++;
+                if (cells[(i*n)+i]===value) diag++;
+                if (cells[(i*n)+n-(i+1)]===value) rdiag++;
+            }
+    
+            if (row === n) {
+                this.setVictoryCells(x*n,1);
                 return true;
+            } else if (col === n) {
+                this.setVictoryCells(y,n);
+                return true;
+            } else if (diag === n) {
+                this.setVictoryCells(0,n+1);
+                return true;
+            } else if (rdiag === n) {
+                this.setVictoryCells(n-1,n-1);
+                return true;
+            } else {
+                return false;
             }
         },
-
-        setCellClassName(x, y, z) {
-            this.writeInMainText("Victoria de " + this.cells[x]);
-            var cells = document.querySelectorAll("td");
-            for (let cell of cells) {
-                cell.className = "normalCell disable";
+    
+        setVictoryCells(init, sum) {
+            this.writeInMainText("Victoria de " + this.cells[init]);
+            var tds = document.querySelectorAll("td");
+            for (let td of tds) {
+                td.className = "normalCell disable";
             }
-            document.getElementById(x).className = "winCell";
-            document.getElementById(y).className = "winCell";
-            document.getElementById(z).className = "winCell";
+            for (var i = 0; i < this.dimension; i++) {
+                document.getElementById(init+(i*sum)).className = "winCell";
+            }
         },
 
         computersTurn() {
@@ -317,10 +325,10 @@ let app = new Vue({
             <div id="table_div">
                 <table class="table-striped no-bordered" id="board">
                     <tbody>
-                        <tr v-for="i in n">
-                            <td class="normalCell" v-bind:id="(i-1)*n + j-1" v-on:click="playerTurn((i-1)*n + j-1)" v-for="j in n">
-                                <img height="50" width="50" src="./images/X_symbol.png" alt="X_symbol" v-if="cells[(i-1)*n + j-1] === 'X'">
-                                <img height="50" width="50" src="./images/O_symbol.png" alt="O_symbol" v-else-if="cells[(i-1)*n + j-1] === 'O'">
+                        <tr v-for="i in dimension">
+                            <td class="normalCell" v-bind:id="(i-1)*dimension + j-1" v-on:click="playerTurn((i-1)*dimension + j-1)" v-for="j in dimension">
+                                <img height="50" width="50" src="./images/X_symbol.png" alt="X_symbol" v-if="cells[(i-1)*dimension + j-1] === 'X'">
+                                <img height="50" width="50" src="./images/O_symbol.png" alt="O_symbol" v-else-if="cells[(i-1)*dimension + j-1] === 'O'">
                             </td>
                         </tr>
                     </tbody>
