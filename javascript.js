@@ -14,9 +14,13 @@ let app = new Vue({
         gameFinished: false,
         move: 0,
         mode: EASY_MODE,
-        cells: Array(9).fill(EMPTY_CELL)
+        matrix: Array(3).fill(Array(3).fill(EMPTY_CELL))
     },
     methods: {
+
+        getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min);
+        },
 
         resetBoard() {
             this.turn = X;
@@ -24,7 +28,7 @@ let app = new Vue({
             this.move = 0;
             this.getModeSelected();
             this.writeInMainText("Iniciar partida");
-            this.cells = Array((this.dimension * this.dimension)).fill(EMPTY_CELL);
+            this.matrix = Array(this.dimension).fill(Array(this.dimension).fill(EMPTY_CELL));
             var tds = document.querySelectorAll("td");
             for (let td of tds) {
                 td.className = "normalCell";
@@ -46,7 +50,7 @@ let app = new Vue({
         },
 
         playerTurn(id) {
-            if (this.gameFinished == false && this.cells[id] == EMPTY_CELL) {
+            if (this.gameFinished == false && this.matrix[Math.floor(id / this.dimension)][Math.floor(id % this.dimension)] == EMPTY_CELL) {
                 this.move++;
                 this.writeCell(id);
                 if (this.gameFinished == false && this.mode != MANUAL_MODE) {
@@ -56,16 +60,28 @@ let app = new Vue({
         },
 
         writeCell(id) {
-            Vue.set(this.cells, id, this.turn);
-            this.checkBoard(this.cells, this.turn, id);
+            this.writeInMatrix(Math.floor(id / this.dimension), Math.floor(id % this.dimension), this.turn);
+            this.checkBoard(this.matrix, this.turn, id);
             if (this.gameFinished == false) {
                 this.turn = this.turn === X ? O : X;
                 this.writeInMainText("Turno de " + this.turn);
             }
         },
 
-        checkBoard(cells, currentTurn, position) {
-            if (!(cells.includes(EMPTY_CELL))) {
+        writeInMatrix(row, column, value) {
+            this.matrix = this.matrix.map((r, i) => {
+                if (row == i) {
+                    return r.map((c, j) => {
+                        return column == j ? value : c;
+                    });
+                } else {
+                    return r;
+                }
+            });
+        },
+
+        checkBoard(matrix, currentTurn, position) {
+            if (!(matrix.map(row => { return row.includes(EMPTY_CELL) })).includes(true)) {
                 this.writeInMainText("Empate");
                 var tds = document.querySelectorAll("td");
                 for (let td of tds) {
@@ -73,49 +89,49 @@ let app = new Vue({
                 }
                 this.gameFinished = true;
             } else {
-                this.gameFinished = this.checkCells(cells, currentTurn, Math.floor(position/this.dimension),  Math.floor(position%this.dimension));
+                this.gameFinished = this.checkMatrix(matrix, currentTurn, Math.floor(position / this.dimension), Math.floor(position % this.dimension));
             }
         },
 
-        checkCells(cells, value, x, y) {
+        checkMatrix(matrix, value, x, y) {
             var n = this.dimension;
-            var col=0;
-            var row=0;
-            var diag=0;
-            var rdiag=0;
-    
-            for (var i=0; i<n; i++) {
-                if (cells[(x*n)+i]===value) row++;
-                if (cells[(i*n)+y]===value) col++;
-                if (cells[(i*n)+i]===value) diag++;
-                if (cells[(i*n)+n-(i+1)]===value) rdiag++;
+            var col = 0;
+            var row = 0;
+            var diag = 0;
+            var rdiag = 0;
+
+            for (var i = 0; i < n; i++) {
+                if (matrix[x][i] === value) row++;
+                if (matrix[i][y] === value) col++;
+                if (matrix[i][i] === value) diag++;
+                if (matrix[i][n - (i + 1)] === value) rdiag++;
             }
-    
+
             if (row === n) {
-                this.setVictoryCells(x*n,1);
+                this.setVictoryCells(x * n, 1);
                 return true;
             } else if (col === n) {
-                this.setVictoryCells(y,n);
+                this.setVictoryCells(y, n);
                 return true;
             } else if (diag === n) {
-                this.setVictoryCells(0,n+1);
+                this.setVictoryCells(0, n + 1);
                 return true;
             } else if (rdiag === n) {
-                this.setVictoryCells(n-1,n-1);
+                this.setVictoryCells(n - 1, n - 1);
                 return true;
             } else {
                 return false;
             }
         },
-    
+
         setVictoryCells(init, sum) {
-            this.writeInMainText("Victoria de " + this.cells[init]);
+            this.writeInMainText("Victoria de " + this.matrix[Math.floor(init / this.dimension)][Math.floor(init % this.dimension)]);
             var tds = document.querySelectorAll("td");
             for (let td of tds) {
                 td.className = "normalCell disable";
             }
             for (var i = 0; i < this.dimension; i++) {
-                document.getElementById(init+(i*sum)).className = "winCell";
+                document.getElementById(init + (i * sum)).className = "winCell";
             }
         },
 
@@ -123,7 +139,7 @@ let app = new Vue({
             var taken = false;
             while (taken === false && this.move != 5) {
                 var id = this.chooseCell();
-                if (this.cells[id] == EMPTY_CELL) {
+                if (this.matrix[Math.floor(id / this.dimension)][Math.floor(id % this.dimension)] == EMPTY_CELL) {
                     taken = true;
                     this.writeCell(id);
                 }
@@ -132,7 +148,7 @@ let app = new Vue({
 
         chooseCell() {
             if (this.mode == EASY_MODE) {
-                return (Math.random() * 9).toFixed();
+                return this.getRandomNumber(0, (this.dimension * this.dimension) - 1);
             } else {
                 var choice = this.tryToWin(O);
                 if (choice != -1) {
@@ -142,7 +158,7 @@ let app = new Vue({
                     if (choice != -1) {
                         return choice;
                     } else {
-                        return this.mode == MEDIUM_MODE ? (Math.random() * 9).toFixed() : this.studyMove();
+                        return this.mode == MEDIUM_MODE ? this.getRandomNumber(0, (this.dimension * this.dimension) - 1) : this.studyMove();
                     }
                 }
             }
@@ -150,67 +166,67 @@ let app = new Vue({
 
         tryToWin(value) {
             //Primera fila
-            if (this.cells[0] == value && this.cells[1] == value && this.cells[2] == EMPTY_CELL) {
+            if (this.matrix[0][0] == value && this.matrix[0][1] == value && this.matrix[0][2] == EMPTY_CELL) {
                 return 2;
-            } else if (this.cells[0] == value && this.cells[2] == value && this.cells[1] == EMPTY_CELL) {
+            } else if (this.matrix[0][0] == value && this.matrix[0][2] == value && this.matrix[0][1] == EMPTY_CELL) {
                 return 1;
-            } else if (this.cells[1] == value && this.cells[2] == value && this.cells[0] == EMPTY_CELL) {
+            } else if (this.matrix[0][1] == value && this.matrix[0][2] == value && this.matrix[0][0] == EMPTY_CELL) {
                 return 0;
             }
             //Segunda fila
-            else if (this.cells[3] == value && this.cells[4] == value && this.cells[5] == EMPTY_CELL) {
+            else if (this.matrix[1][0] == value && this.matrix[1][1] == value && this.matrix[1][2] == EMPTY_CELL) {
                 return 5;
-            } else if (this.cells[3] == value && this.cells[5] == value && this.cells[4] == EMPTY_CELL) {
+            } else if (this.matrix[1][0] == value && this.matrix[1][2] == value && this.matrix[1][1] == EMPTY_CELL) {
                 return 4;
-            } else if (this.cells[4] == value && this.cells[5] == value && this.cells[3] == EMPTY_CELL) {
+            } else if (this.matrix[1][1] == value && this.matrix[1][2] == value && this.matrix[1][0] == EMPTY_CELL) {
                 return 3;
             }
             //Tercera fila
-            else if (this.cells[6] == value && this.cells[7] == value && this.cells[8] == EMPTY_CELL) {
+            else if (this.matrix[2][0] == value && this.matrix[2][1] == value && this.matrix[2][2] == EMPTY_CELL) {
                 return 8;
-            } else if (this.cells[6] == value && this.cells[8] == value && this.cells[7] == EMPTY_CELL) {
+            } else if (this.matrix[2][0] == value && this.matrix[2][2] == value && this.matrix[2][1] == EMPTY_CELL) {
                 return 7;
-            } else if (this.cells[7] == value && this.cells[8] == value && this.cells[6] == EMPTY_CELL) {
+            } else if (this.matrix[2][1] == value && this.matrix[2][2] == value && this.matrix[2][0] == EMPTY_CELL) {
                 return 6;
             }
             //Primera columna
-            else if (this.cells[0] == value && this.cells[3] == value && this.cells[6] == EMPTY_CELL) {
+            else if (this.matrix[0][0] == value && this.matrix[1][0] == value && this.matrix[2][0] == EMPTY_CELL) {
                 return 6;
-            } else if (this.cells[0] == value && this.cells[6] == value && this.cells[3] == EMPTY_CELL) {
+            } else if (this.matrix[0][0] == value && this.matrix[2][0] == value && this.matrix[1][0] == EMPTY_CELL) {
                 return 3;
-            } else if (this.cells[3] == value && this.cells[6] == value && this.cells[0] == EMPTY_CELL) {
+            } else if (this.matrix[1][0] == value && this.matrix[2][0] == value && this.matrix[0][0] == EMPTY_CELL) {
                 return 0;
             }
             //Segunda columna
-            else if (this.cells[1] == value && this.cells[4] == value && this.cells[7] == EMPTY_CELL) {
+            else if (this.matrix[0][1] == value && this.matrix[1][1] == value && this.matrix[2][1] == EMPTY_CELL) {
                 return 7;
-            } else if (this.cells[1] == value && this.cells[7] == value && this.cells[4] == EMPTY_CELL) {
+            } else if (this.matrix[0][1] == value && this.matrix[2][1] == value && this.matrix[1][1] == EMPTY_CELL) {
                 return 4;
-            } else if (this.cells[4] == value && this.cells[7] == value && this.cells[1] == EMPTY_CELL) {
+            } else if (this.matrix[1][1] == value && this.matrix[2][1] == value && this.matrix[0][1] == EMPTY_CELL) {
                 return 1;
             }
             //Tercera columna
-            else if (this.cells[2] == value && this.cells[5] == value && this.cells[8] == EMPTY_CELL) {
+            else if (this.matrix[0][2] == value && this.matrix[1][2] == value && this.matrix[2][2] == EMPTY_CELL) {
                 return 8;
-            } else if (this.cells[2] == value && this.cells[8] == value && this.cells[5] == EMPTY_CELL) {
+            } else if (this.matrix[0][2] == value && this.matrix[2][2] == value && this.matrix[1][2] == EMPTY_CELL) {
                 return 5;
-            } else if (this.cells[5] == value && this.cells[8] == value && this.cells[2] == EMPTY_CELL) {
+            } else if (this.matrix[1][2] == value && this.matrix[2][2] == value && this.matrix[0][2] == EMPTY_CELL) {
                 return 2;
             }
             //Primera diagonal
-            else if (this.cells[0] == value && this.cells[4] == value && this.cells[8] == EMPTY_CELL) {
+            else if (this.matrix[0][0] == value && this.matrix[1][1] == value && this.matrix[2][2] == EMPTY_CELL) {
                 return 8;
-            } else if (this.cells[0] == value && this.cells[8] == value && this.cells[4] == EMPTY_CELL) {
+            } else if (this.matrix[0][0] == value && this.matrix[2][2] == value && this.matrix[1][1] == EMPTY_CELL) {
                 return 4;
-            } else if (this.cells[4] == value && this.cells[8] == value && this.cells[0] == EMPTY_CELL) {
+            } else if (this.matrix[1][1] == value && this.matrix[2][2] == value && this.matrix[0][0] == EMPTY_CELL) {
                 return 0;
             }
             //Segunda diagonal
-            else if (this.cells[2] == value && this.cells[4] == value && this.cells[6] == EMPTY_CELL) {
+            else if (this.matrix[0][2] == value && this.matrix[1][1] == value && this.matrix[2][0] == EMPTY_CELL) {
                 return 6;
-            } else if (this.cells[2] == value && this.cells[6] == value && this.cells[4] == EMPTY_CELL) {
+            } else if (this.matrix[0][2] == value && this.matrix[2][0] == value && this.matrix[1][1] == EMPTY_CELL) {
                 return 4;
-            } else if (this.cells[4] == value && this.cells[6] == value && this.cells[2] == EMPTY_CELL) {
+            } else if (this.matrix[1][1] == value && this.matrix[2][0] == value && this.matrix[0][2] == EMPTY_CELL) {
                 return 2;
             }
             //Otro
@@ -223,84 +239,84 @@ let app = new Vue({
             switch (this.move) {
                 //Primer turno
                 case 1:
-                    if (this.cells[0] == X || this.cells[2] == X || this.cells[6] == X || this.cells[8] == X) {
+                    if (this.matrix[0][0] == X || this.matrix[0][2] == X || this.matrix[2][0] == X || this.matrix[2][2] == X) {
                         return 4;
-                    } else if (this.cells[4] == X) {
+                    } else if (this.matrix[1][1] == X) {
                         return 0;
-                    } else if (this.cells[1] == X) {
+                    } else if (this.matrix[0][1] == X) {
                         return 2;
-                    } else if (this.cells[3] == X) {
+                    } else if (this.matrix[1][0] == X) {
                         return 6;
                     } else {
                         return 8;
                     }
-                    //Segundo turno: solo debemos comprobar las opciones que no se hayan descartado anteriormente con la función tryToWin
-                    case 2:
-                        if (this.cells[0] == X && this.cells[4] == O) {
-                            if (this.cells[5] == X) {
-                                return 1;
-                            } else {
-                                return 5;
-                            }
-                        } else if (this.cells[1] == X && this.cells[2] == O) {
-                            if (this.cells[0] == X || this.cells[3] == X) {
-                                return 8;
-                            } else if (this.cells[5] == X) {
-                                return 4;
-                            } else {
-                                return 7;
-                            }
-                        } else if (this.cells[2] == X && this.cells[4] == O) {
-                            if (this.cells[3] == X) {
-                                return 1;
-                            } else {
-                                return 3;
-                            }
-                        } else if (this.cells[3] == X && this.cells[6] == O) {
-                            if (this.cells[0] == X || this.cells[1] == X) {
-                                return 8;
-                            } else if (this.cells[8] == X) {
-                                return 5;
-                            } else {
-                                return 4;
-                            }
-                        } else if (this.cells[4] == X && this.cells[0] == O) {
-                            return 6;
-                        } else if (this.cells[5] == X && this.cells[8] == O) {
-                            if (this.cells[0] == X || this.cells[7] == X) {
-                                return 4;
-                            } else if (this.cells[6] == X) {
-                                return 3;
-                            } else {
-                                return 6;
-                            }
-                        } else if (this.cells[6] == X && this.cells[4] == O) {
-                            if (this.cells[5] == X) {
-                                return 7;
-                            } else {
-                                return 3;
-                            }
-                        } else if (this.cells[7] == X && this.cells[8] == O) {
-                            if (this.cells[3] == X || this.cells[6] == X) {
-                                return 2;
-                            } else if (this.cells[2] == X) {
-                                return 1;
-                            } else {
-                                return 4;
-                            }
-                        } else if (this.cells[8] == X && this.cells[4] == O) {
-                            if (this.cells[0] == X) {
-                                return 5;
-                            } else if (this.cells[1] == X) {
-                                return 0;
-                            } else {
-                                return 7;
-                            }
+                //Segundo turno: solo debemos comprobar las opciones que no se hayan descartado anteriormente con la función tryToWin
+                case 2:
+                    if (this.matrix[0][0] == X && this.matrix[1][1] == O) {
+                        if (this.matrix[1][2] == X) {
+                            return 1;
                         } else {
-                            return (Math.random() * 9).toFixed();
+                            return 5;
                         }
-                        default:
-                            return (Math.random() * 9).toFixed();
+                    } else if (this.matrix[0][1] == X && this.matrix[0][2] == O) {
+                        if (this.matrix[0][0] == X || this.matrix[1][0] == X) {
+                            return 8;
+                        } else if (this.matrix[1][2] == X) {
+                            return 4;
+                        } else {
+                            return 7;
+                        }
+                    } else if (this.matrix[0][2] == X && this.matrix[1][1] == O) {
+                        if (this.matrix[1][0] == X) {
+                            return 1;
+                        } else {
+                            return 3;
+                        }
+                    } else if (this.matrix[1][0] == X && this.matrix[2][0] == O) {
+                        if (this.matrix[0][0] == X || this.matrix[0][1] == X) {
+                            return 8;
+                        } else if (this.matrix[2][2] == X) {
+                            return 5;
+                        } else {
+                            return 4;
+                        }
+                    } else if (this.matrix[1][1] == X && this.matrix[0][0] == O) {
+                        return 6;
+                    } else if (this.matrix[1][2] == X && this.matrix[2][2] == O) {
+                        if (this.matrix[0][0] == X || this.matrix[2][1] == X) {
+                            return 4;
+                        } else if (this.matrix[2][0] == X) {
+                            return 3;
+                        } else {
+                            return 6;
+                        }
+                    } else if (this.matrix[2][0] == X && this.matrix[1][1] == O) {
+                        if (this.matrix[1][2] == X) {
+                            return 7;
+                        } else {
+                            return 3;
+                        }
+                    } else if (this.matrix[2][1] == X && this.matrix[2][2] == O) {
+                        if (this.matrix[1][0] == X || this.matrix[2][0] == X) {
+                            return 2;
+                        } else if (this.matrix[0][2] == X) {
+                            return 1;
+                        } else {
+                            return 4;
+                        }
+                    } else if (this.matrix[2][2] == X && this.matrix[1][1] == O) {
+                        if (this.matrix[0][0] == X) {
+                            return 5;
+                        } else if (this.matrix[0][1] == X) {
+                            return 0;
+                        } else {
+                            return 7;
+                        }
+                    } else {
+                        return this.getRandomNumber(0, (this.dimension * this.dimension) - 1);
+                    }
+                default:
+                    return this.getRandomNumber(0, (this.dimension * this.dimension) - 1);
             }
         }
     },
@@ -327,8 +343,8 @@ let app = new Vue({
                     <tbody>
                         <tr v-for="i in dimension">
                             <td class="normalCell" v-bind:id="(i-1)*dimension + j-1" v-on:click="playerTurn((i-1)*dimension + j-1)" v-for="j in dimension">
-                                <img height="50" width="50" src="./images/X_symbol.png" alt="X_symbol" v-if="cells[(i-1)*dimension + j-1] === 'X'">
-                                <img height="50" width="50" src="./images/O_symbol.png" alt="O_symbol" v-else-if="cells[(i-1)*dimension + j-1] === 'O'">
+                                <img src="./images/X_symbol.png" alt="X_symbol" v-if="matrix[i-1][j-1] === 'X'">
+                                <img src="./images/O_symbol.png" alt="O_symbol" v-else-if="matrix[i-1][j-1] === 'O'">
                             </td>
                         </tr>
                     </tbody>
