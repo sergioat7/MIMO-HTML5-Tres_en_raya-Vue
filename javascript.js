@@ -69,15 +69,9 @@ let app = new Vue({
         },
 
         writeInMatrix(row, column, value) {
-            this.matrix = this.matrix.map((r, i) => {
-                if (row == i) {
-                    return r.map((c, j) => {
-                        return column == j ? value : c;
-                    });
-                } else {
-                    return r;
-                }
-            });
+            var newRow = this.matrix[row].slice();
+            newRow[column] = value;
+            Vue.set(this.matrix, row, newRow);
         },
 
         checkBoard(matrix, currentTurn, position) {
