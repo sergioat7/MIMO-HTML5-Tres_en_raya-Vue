@@ -22,6 +22,10 @@ let app = new Vue({
             return Math.floor(Math.random() * (max - min + 1) + min);
         },
 
+        isThereEmptyCell(matrix) {
+            return (matrix.map(row => { return row.includes(EMPTY_CELL) })).includes(true);
+        },
+
         resetBoard() {
             this.turn = X;
             this.gameFinished = false;
@@ -61,7 +65,7 @@ let app = new Vue({
 
         writeCell(id) {
             this.writeInMatrix(Math.floor(id / this.dimension), Math.floor(id % this.dimension), this.turn);
-            this.checkBoard(this.matrix, this.turn, id);
+            this.gameFinished = this.checkMatrix(this.matrix, this.turn, Math.floor(id / this.dimension), Math.floor(id % this.dimension));
             if (this.gameFinished == false) {
                 this.turn = this.turn === X ? O : X;
                 this.writeInMainText("Turno de " + this.turn);
@@ -72,19 +76,6 @@ let app = new Vue({
             var newRow = this.matrix[row].slice();
             newRow[column] = value;
             Vue.set(this.matrix, row, newRow);
-        },
-
-        checkBoard(matrix, currentTurn, position) {
-            if (!(matrix.map(row => { return row.includes(EMPTY_CELL) })).includes(true)) {
-                this.writeInMainText("Empate");
-                var tds = document.querySelectorAll("td");
-                for (let td of tds) {
-                    td.className = "normalCell disable";
-                }
-                this.gameFinished = true;
-            } else {
-                this.gameFinished = this.checkMatrix(matrix, currentTurn, Math.floor(position / this.dimension), Math.floor(position % this.dimension));
-            }
         },
 
         checkMatrix(matrix, value, x, y) {
@@ -113,6 +104,13 @@ let app = new Vue({
             } else if (rdiag === n) {
                 this.setVictoryCells(n - 1, n - 1);
                 return true;
+            } else if (!this.isThereEmptyCell(matrix)) {
+                this.writeInMainText("Empate");
+                var tds = document.querySelectorAll("td");
+                for (let td of tds) {
+                    td.className = "normalCell disable";
+                }
+                return true;
             } else {
                 return false;
             }
@@ -130,19 +128,15 @@ let app = new Vue({
         },
 
         computersTurn() {
-            var taken = false;
-            while (taken === false && this.move != 5) {
-                var id = this.chooseCell();
-                if (this.matrix[Math.floor(id / this.dimension)][Math.floor(id % this.dimension)] == EMPTY_CELL) {
-                    taken = true;
-                    this.writeCell(id);
-                }
+            var id = this.chooseCell();
+            if (this.matrix[Math.floor(id / this.dimension)][Math.floor(id % this.dimension)] == EMPTY_CELL) {
+                this.writeCell(id);
             }
         },
 
         chooseCell() {
             if (this.mode == EASY_MODE) {
-                return this.getRandomNumber(0, (this.dimension * this.dimension) - 1);
+                return this.getRandomEmptyCell();
             } else {
                 var choice = this.tryToWin(O);
                 if (choice != -1) {
@@ -152,10 +146,28 @@ let app = new Vue({
                     if (choice != -1) {
                         return choice;
                     } else {
-                        return this.mode == MEDIUM_MODE ? this.getRandomNumber(0, (this.dimension * this.dimension) - 1) : this.studyMove();
+                        return this.mode == MEDIUM_MODE ? this.getRandomEmptyCell() : this.studyMove();
                     }
                 }
             }
+        },
+
+        getRandomEmptyCell() {
+            var emptyCells = this.matrix.map((row, i) => {
+                return row.map((element, j) => {
+                    if (element === "") {
+                        return (i * this.dimension) + j;
+                    }
+                });
+            }).map(row => {
+                return row.filter(Number.isFinite);
+            });
+            var emptyIds = emptyCells[0];
+            for (var i = 1; i < emptyCells.length; i++) {
+                emptyIds = emptyIds.concat(emptyCells[i]);
+            }
+            var number = this.getRandomNumber(0, emptyIds.length - 1);
+            return emptyIds[number];
         },
 
         tryToWin(value) {
@@ -307,10 +319,10 @@ let app = new Vue({
                             return 7;
                         }
                     } else {
-                        return this.getRandomNumber(0, (this.dimension * this.dimension) - 1);
+                        return this.getRandomEmptyCell();
                     }
                 default:
-                    return this.getRandomNumber(0, (this.dimension * this.dimension) - 1);
+                    return this.getRandomEmptyCell();
             }
         }
     },
