@@ -12,11 +12,13 @@ let app = new Vue({
         dimension: 3,
         turn: X,
         gameFinished: false,
-        move: 0,
         mode: EASY_MODE,
-        matrix: Array(3).fill(Array(3).fill(EMPTY_CELL))
+        matrix: Array(3).fill(Array(3).fill(EMPTY_CELL)),
+        minimaxOptions: new Map()
     },
     methods: {
+
+        // MARK: Auxiliar functions
 
         getRandomNumber(min, max) {
             return Math.floor(Math.random() * (max - min + 1) + min);
@@ -26,56 +28,48 @@ let app = new Vue({
             return (matrix.map(row => { return row.includes(EMPTY_CELL) })).includes(true);
         },
 
-        resetBoard() {
-            this.turn = X;
-            this.gameFinished = false;
-            this.move = 0;
-            this.getModeSelected();
-            this.writeInMainText("Iniciar partida");
-            this.matrix = Array(this.dimension).fill(Array(this.dimension).fill(EMPTY_CELL));
-            var tds = document.querySelectorAll("td");
-            for (let td of tds) {
-                td.className = "normalCell";
-            }
-        },
-
-        getModeSelected() {
-            var modes = document.getElementsByName('mode');
-            for (let mode of modes) {
-                if (mode.checked) {
-                    this.mode = mode.id;
-                    break;
-                }
-            }
-        },
-
         writeInMainText(text) {
             document.getElementById('title').innerHTML = text;
-        },
-
-        playerTurn(id) {
-            if (this.gameFinished == false && this.matrix[Math.floor(id / this.dimension)][Math.floor(id % this.dimension)] == EMPTY_CELL) {
-                this.move++;
-                this.writeCell(id);
-                if (this.gameFinished == false && this.mode != MANUAL_MODE) {
-                    this.computersTurn();
-                }
-            }
-        },
-
-        writeCell(id) {
-            this.writeInMatrix(Math.floor(id / this.dimension), Math.floor(id % this.dimension), this.turn);
-            this.gameFinished = this.checkMatrix(this.matrix, this.turn, Math.floor(id / this.dimension), Math.floor(id % this.dimension));
-            if (this.gameFinished == false) {
-                this.turn = this.turn === X ? O : X;
-                this.writeInMainText("Turno de " + this.turn);
-            }
         },
 
         writeInMatrix(row, column, value) {
             var newRow = this.matrix[row].slice();
             newRow[column] = value;
             Vue.set(this.matrix, row, newRow);
+        },
+
+        getEmptyCells(matrix) {
+            var emptyCells = matrix.map((row, i) => {
+                return row.map((element, j) => {
+                    if (element === EMPTY_CELL) {
+                        return (i * this.dimension) + j;
+                    }
+                });
+            }).map(row => {
+                return row.filter(Number.isFinite);
+            });
+            var emptyIds = emptyCells[0];
+            for (var i = 1; i < emptyCells.length; i++) {
+                emptyIds = emptyIds.concat(emptyCells[i]);
+            }
+            return emptyIds;
+        },
+
+        getRandomEmptyCell() {
+            var emptyIds = this.getEmptyCells(this.matrix);
+            var number = this.getRandomNumber(0, emptyIds.length - 1);
+            return emptyIds[number];
+        },
+
+        // MARK: Board functions
+
+        writeCell(row, column) {
+            this.writeInMatrix(row, column, this.turn);
+            this.gameFinished = this.checkMatrix(this.matrix, this.turn, row, column);
+            if (this.gameFinished == false) {
+                this.turn = this.turn === X ? O : X;
+                this.writeInMainText("Turno de " + this.turn);
+            }
         },
 
         checkMatrix(matrix, value, x, y) {
@@ -116,6 +110,32 @@ let app = new Vue({
             }
         },
 
+        checkBoard(matrix, value) {
+            var n = this.dimension;
+            var col = 0;
+            var row = 0;
+            var diag = 0;
+            var rdiag = 0;
+
+            var cols = [];
+            var rows = [];
+
+            for (var i = 0; i < n; i++) {
+                for (var j = 0; j < n; j++) {
+                    if (matrix[i][j] === value) row++;
+                    if (matrix[j][i] === value) col++;
+                }
+                if (matrix[i][i] === value) diag++;
+                if (matrix[i][n - (i + 1)] === value) rdiag++;
+                cols.push(col === n);
+                rows.push(row === n);
+                col = 0;
+                row = 0;
+            }
+
+            return rows.includes(true) || cols.includes(true) || diag === n || rdiag === n;
+        },
+
         setVictoryCells(init, sum) {
             this.writeInMainText("Victoria de " + this.matrix[Math.floor(init / this.dimension)][Math.floor(init % this.dimension)]);
             var tds = document.querySelectorAll("td");
@@ -127,202 +147,216 @@ let app = new Vue({
             }
         },
 
+        // MARK: Main functions
+
+        playerTurn(row, column) {
+            if (this.gameFinished == false && this.matrix[row][column] == EMPTY_CELL) {
+                this.writeCell(row, column);
+                if (this.gameFinished == false && this.mode != MANUAL_MODE) {
+                    this.computersTurn();
+                }
+            }
+        },
+
+        resetBoard() {
+            this.turn = X;
+            this.gameFinished = false;
+            this.getModeSelected();
+            this.writeInMainText("Iniciar partida");
+            this.matrix = Array(this.dimension).fill(Array(this.dimension).fill(EMPTY_CELL));
+            var tds = document.querySelectorAll("td");
+            for (let td of tds) {
+                td.className = "normalCell";
+            }
+        },
+
+        getModeSelected() {
+            var modes = document.getElementsByName('mode');
+            for (let mode of modes) {
+                if (mode.checked) {
+                    this.mode = mode.id;
+                    break;
+                }
+            }
+        },
+
+        // MARK: Computer functions
+
         computersTurn() {
             var id = this.chooseCell();
-            if (this.matrix[Math.floor(id / this.dimension)][Math.floor(id % this.dimension)] == EMPTY_CELL) {
-                this.writeCell(id);
+            var row = Math.floor(id / this.dimension);
+            var column = Math.floor(id % this.dimension);
+            if (this.matrix[row][column] == EMPTY_CELL) {
+                this.writeCell(row, column);
             }
         },
 
         chooseCell() {
             if (this.mode == EASY_MODE) {
                 return this.getRandomEmptyCell();
-            } else {
-                var choice = this.tryToWin(O);
+            } else if (this.mode == MEDIUM_MODE) {
+                var choice = this.tryToWin(X);
                 if (choice != -1) {
                     return choice;
                 } else {
-                    choice = this.tryToWin(X);
-                    if (choice != -1) {
-                        return choice;
-                    } else {
-                        return this.mode == MEDIUM_MODE ? this.getRandomEmptyCell() : this.studyMove();
-                    }
+                    return this.getRandomEmptyCell();
                 }
+            } else {
+                return this.minimax(this.matrix, true, (res) => { }, 0);
             }
-        },
-
-        getRandomEmptyCell() {
-            var emptyCells = this.matrix.map((row, i) => {
-                return row.map((element, j) => {
-                    if (element === "") {
-                        return (i * this.dimension) + j;
-                    }
-                });
-            }).map(row => {
-                return row.filter(Number.isFinite);
-            });
-            var emptyIds = emptyCells[0];
-            for (var i = 1; i < emptyCells.length; i++) {
-                emptyIds = emptyIds.concat(emptyCells[i]);
-            }
-            var number = this.getRandomNumber(0, emptyIds.length - 1);
-            return emptyIds[number];
         },
 
         tryToWin(value) {
-            //Primera fila
-            if (this.matrix[0][0] == value && this.matrix[0][1] == value && this.matrix[0][2] == EMPTY_CELL) {
-                return 2;
-            } else if (this.matrix[0][0] == value && this.matrix[0][2] == value && this.matrix[0][1] == EMPTY_CELL) {
-                return 1;
-            } else if (this.matrix[0][1] == value && this.matrix[0][2] == value && this.matrix[0][0] == EMPTY_CELL) {
-                return 0;
-            }
-            //Segunda fila
-            else if (this.matrix[1][0] == value && this.matrix[1][1] == value && this.matrix[1][2] == EMPTY_CELL) {
-                return 5;
-            } else if (this.matrix[1][0] == value && this.matrix[1][2] == value && this.matrix[1][1] == EMPTY_CELL) {
-                return 4;
-            } else if (this.matrix[1][1] == value && this.matrix[1][2] == value && this.matrix[1][0] == EMPTY_CELL) {
-                return 3;
-            }
-            //Tercera fila
-            else if (this.matrix[2][0] == value && this.matrix[2][1] == value && this.matrix[2][2] == EMPTY_CELL) {
-                return 8;
-            } else if (this.matrix[2][0] == value && this.matrix[2][2] == value && this.matrix[2][1] == EMPTY_CELL) {
-                return 7;
-            } else if (this.matrix[2][1] == value && this.matrix[2][2] == value && this.matrix[2][0] == EMPTY_CELL) {
-                return 6;
-            }
-            //Primera columna
-            else if (this.matrix[0][0] == value && this.matrix[1][0] == value && this.matrix[2][0] == EMPTY_CELL) {
-                return 6;
-            } else if (this.matrix[0][0] == value && this.matrix[2][0] == value && this.matrix[1][0] == EMPTY_CELL) {
-                return 3;
-            } else if (this.matrix[1][0] == value && this.matrix[2][0] == value && this.matrix[0][0] == EMPTY_CELL) {
-                return 0;
-            }
-            //Segunda columna
-            else if (this.matrix[0][1] == value && this.matrix[1][1] == value && this.matrix[2][1] == EMPTY_CELL) {
-                return 7;
-            } else if (this.matrix[0][1] == value && this.matrix[2][1] == value && this.matrix[1][1] == EMPTY_CELL) {
-                return 4;
-            } else if (this.matrix[1][1] == value && this.matrix[2][1] == value && this.matrix[0][1] == EMPTY_CELL) {
-                return 1;
-            }
-            //Tercera columna
-            else if (this.matrix[0][2] == value && this.matrix[1][2] == value && this.matrix[2][2] == EMPTY_CELL) {
-                return 8;
-            } else if (this.matrix[0][2] == value && this.matrix[2][2] == value && this.matrix[1][2] == EMPTY_CELL) {
-                return 5;
-            } else if (this.matrix[1][2] == value && this.matrix[2][2] == value && this.matrix[0][2] == EMPTY_CELL) {
-                return 2;
-            }
-            //Primera diagonal
-            else if (this.matrix[0][0] == value && this.matrix[1][1] == value && this.matrix[2][2] == EMPTY_CELL) {
-                return 8;
-            } else if (this.matrix[0][0] == value && this.matrix[2][2] == value && this.matrix[1][1] == EMPTY_CELL) {
-                return 4;
-            } else if (this.matrix[1][1] == value && this.matrix[2][2] == value && this.matrix[0][0] == EMPTY_CELL) {
-                return 0;
-            }
-            //Segunda diagonal
-            else if (this.matrix[0][2] == value && this.matrix[1][1] == value && this.matrix[2][0] == EMPTY_CELL) {
-                return 6;
-            } else if (this.matrix[0][2] == value && this.matrix[2][0] == value && this.matrix[1][1] == EMPTY_CELL) {
-                return 4;
-            } else if (this.matrix[1][1] == value && this.matrix[2][0] == value && this.matrix[0][2] == EMPTY_CELL) {
-                return 2;
-            }
-            //Otro
-            else {
-                return -1;
-            }
+            var id = -1;
+
+            //Get available moves
+            var emptyIds = this.getEmptyCells(this.matrix);
+
+            //Iterate over available moves
+            emptyIds.forEach(element => {
+
+                var row = Math.floor(element / this.dimension);
+                var column = Math.floor(element % this.dimension);
+
+                var child = this.matrix.map((r, i) => {
+                    if (row == i) {
+                        return r.map((c, j) => {
+                            return column == j ? value : c;
+                        });
+                    } else {
+                        return r;
+                    }
+                });
+
+                var victory = this.checkBoard(child, value);
+                if (victory) {
+                    id = element;
+                }
+            });
+
+            return id;
         },
 
-        studyMove() {
-            switch (this.move) {
-                //Primer turno
-                case 1:
-                    if (this.matrix[0][0] == X || this.matrix[0][2] == X || this.matrix[2][0] == X || this.matrix[2][2] == X) {
-                        return 4;
-                    } else if (this.matrix[1][1] == X) {
-                        return 0;
-                    } else if (this.matrix[0][1] == X) {
-                        return 2;
-                    } else if (this.matrix[1][0] == X) {
-                        return 6;
-                    } else {
-                        return 8;
+        minimax(board, maximizing, callback, depth) {
+
+            var dimension = this.dimension;
+
+            if (depth == 0) this.minimaxOptions.clear();
+            var Xvictory = this.checkBoard(board, X);
+            var Ovictory = this.checkBoard(board, O);
+            if (Xvictory) {
+                return -100 + depth;
+            } else if (Ovictory) {
+                return 100 - depth;
+            } else if (depth === dimension + 1) {
+                return 0;
+            }
+
+            if (maximizing) {
+                var best = -100;
+
+                //Get available moves
+                var emptyIds = this.getEmptyCells(board);
+
+                //Iterate over available moves
+                emptyIds.forEach(element => {
+
+                    var row = Math.floor(element / dimension);
+                    var column = Math.floor(element % dimension);
+
+                    var child = board.map((r, i) => {
+                        if (row == i) {
+                            return r.map((c, j) => {
+                                return column == j ? O : c;
+                            });
+                        } else {
+                            return r;
+                        }
+                    });
+
+                    var node_value = this.minimax(child, false, callback, depth + 1);
+                    best = Math.max(best, node_value);
+
+                    if (depth === 0) {
+                        var moves = this.minimaxOptions.has(node_value) ? this.minimaxOptions.get(node_value).toString() + "," + element.toString() : element
+                        this.minimaxOptions.set(node_value, moves)
                     }
-                //Segundo turno: solo debemos comprobar las opciones que no se hayan descartado anteriormente con la función tryToWin
-                case 2:
-                    if (this.matrix[0][0] == X && this.matrix[1][1] == O) {
-                        if (this.matrix[1][2] == X) {
-                            return 1;
-                        } else {
-                            return 5;
-                        }
-                    } else if (this.matrix[0][1] == X && this.matrix[0][2] == O) {
-                        if (this.matrix[0][0] == X || this.matrix[1][0] == X) {
-                            return 8;
-                        } else if (this.matrix[1][2] == X) {
-                            return 4;
-                        } else {
-                            return 7;
-                        }
-                    } else if (this.matrix[0][2] == X && this.matrix[1][1] == O) {
-                        if (this.matrix[1][0] == X) {
-                            return 1;
-                        } else {
-                            return 3;
-                        }
-                    } else if (this.matrix[1][0] == X && this.matrix[2][0] == O) {
-                        if (this.matrix[0][0] == X || this.matrix[0][1] == X) {
-                            return 8;
-                        } else if (this.matrix[2][2] == X) {
-                            return 5;
-                        } else {
-                            return 4;
-                        }
-                    } else if (this.matrix[1][1] == X && this.matrix[0][0] == O) {
-                        return 6;
-                    } else if (this.matrix[1][2] == X && this.matrix[2][2] == O) {
-                        if (this.matrix[0][0] == X || this.matrix[2][1] == X) {
-                            return 4;
-                        } else if (this.matrix[2][0] == X) {
-                            return 3;
-                        } else {
-                            return 6;
-                        }
-                    } else if (this.matrix[2][0] == X && this.matrix[1][1] == O) {
-                        if (this.matrix[1][2] == X) {
-                            return 7;
-                        } else {
-                            return 3;
-                        }
-                    } else if (this.matrix[2][1] == X && this.matrix[2][2] == O) {
-                        if (this.matrix[1][0] == X || this.matrix[2][0] == X) {
-                            return 2;
-                        } else if (this.matrix[0][2] == X) {
-                            return 1;
-                        } else {
-                            return 4;
-                        }
-                    } else if (this.matrix[2][2] == X && this.matrix[1][1] == O) {
-                        if (this.matrix[0][0] == X) {
-                            return 5;
-                        } else if (this.matrix[0][1] == X) {
-                            return 0;
-                        } else {
-                            return 7;
-                        }
-                    } else {
-                        return this.getRandomEmptyCell();
+
+                });
+
+                var result;
+                if (depth === 0) {
+
+                    if (this.minimaxOptions.has(-100)) {
+                        best = -100;
+                    } else if (this.minimaxOptions.has(100)) {
+                        best = 100;
                     }
-                default:
-                    return this.getRandomEmptyCell();
+
+                    var bestResult = this.minimaxOptions.get(best);
+                    if (typeof bestResult == "string") {
+
+                        var bestArray = bestResult.split(",").map(id => parseInt(id));
+                        if (bestArray.length === Math.pow(dimension, 2) - 1) {
+                            if (bestArray.includes(0)) {
+                                result = 0;
+                            } else if (bestArray.includes(dimension - 1)) {
+                                result = dimension - 1;
+                            } else if (bestArray.includes((dimension - 1) * dimension)) {
+                                result = (dimension - 1) * dimension;
+                            } else if (bestArray.includes(Math.pow(dimension, 2) - 1)) {
+                                result = Math.pow(dimension, 2) - 1;
+                            } else {
+                                var random = this.getRandomNumber(0, bestArray.length - 1);
+                                result = bestArray[random];
+                            }
+                        } else {
+                            var random = this.getRandomNumber(0, bestArray.length - 1);
+                            result = bestArray[random];
+                        }
+
+                    } else {
+                        result = bestResult;
+                    }
+
+                    callback(result);
+                    return result;
+                }
+                return best;
+            }
+
+            if (!maximizing) {
+                var best = 100;
+
+                //Get available moves
+                var emptyIds = this.getEmptyCells(board);
+
+                //Iterate over available moves
+                emptyIds.forEach(element => {
+
+                    var row = Math.floor(element / dimension);
+                    var column = Math.floor(element % dimension);
+
+                    var child = board.map((r, i) => {
+                        if (row == i) {
+                            return r.map((c, j) => {
+                                return column == j ? X : c;
+                            });
+                        } else {
+                            return r;
+                        }
+                    });
+
+                    var node_value = this.minimax(child, true, callback, depth + 1);
+                    best = Math.min(best, node_value);
+
+                    if (depth === 0) {
+                        var moves = this.minimaxOptions.has(node_value) ? this.minimaxOptions.get(node_value).toString() + "," + element.toString() : element
+                        this.minimaxOptions.set(node_value, moves)
+                    }
+
+                });
+                return best;
             }
         }
     },
@@ -348,7 +382,7 @@ let app = new Vue({
                 <table class="table-striped no-bordered" id="board">
                     <tbody>
                         <tr v-for="i in dimension">
-                            <td class="normalCell" v-bind:id="(i-1)*dimension + j-1" v-on:click="playerTurn((i-1)*dimension + j-1)" v-for="j in dimension">
+                            <td class="normalCell" v-bind:id="(i-1)*dimension + j-1" v-on:click="playerTurn(i-1,j-1)" v-for="j in dimension">
                                 <img src="./images/X_symbol.png" alt="X_symbol" v-if="matrix[i-1][j-1] === 'X'">
                                 <img src="./images/O_symbol.png" alt="O_symbol" v-else-if="matrix[i-1][j-1] === 'O'">
                             </td>
