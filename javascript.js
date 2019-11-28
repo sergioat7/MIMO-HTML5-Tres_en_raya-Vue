@@ -9,7 +9,7 @@ const MEDIUM_MODE = "automatic_medium";
 let app = new Vue({
     el: "#app",
     data: {
-        dimension: 3,
+        dimension: 0,
         turn: X,
         gameFinished: false,
         mode: EASY_MODE,
@@ -102,7 +102,7 @@ let app = new Vue({
                 this.writeInMainText("Empate");
                 var tds = document.querySelectorAll("td");
                 for (let td of tds) {
-                    td.className = "normalCell disable";
+                    td.className = "td" + n + " disable";
                 }
                 return true;
             } else {
@@ -137,13 +137,14 @@ let app = new Vue({
         },
 
         setVictoryCells(init, sum) {
-            this.writeInMainText("Victoria de " + this.matrix[Math.floor(init / this.dimension)][Math.floor(init % this.dimension)]);
+            var n = this.dimension;
+            this.writeInMainText("Victoria de " + this.matrix[Math.floor(init / n)][Math.floor(init % n)]);
             var tds = document.querySelectorAll("td");
             for (let td of tds) {
-                td.className = "normalCell disable";
+                td.className = "td" + n + " disable";
             }
-            for (var i = 0; i < this.dimension; i++) {
-                document.getElementById(init + (i * sum)).className = "winCell";
+            for (var i = 0; i < n; i++) {
+                document.getElementById(init + (i * sum)).className = "winTd" + n;
             }
         },
 
@@ -159,15 +160,26 @@ let app = new Vue({
         },
 
         resetBoard() {
+            var n = this.dimension;
             this.turn = X;
             this.gameFinished = false;
             this.getModeSelected();
             this.writeInMainText("Iniciar partida");
-            this.matrix = Array(this.dimension).fill(Array(this.dimension).fill(EMPTY_CELL));
+            this.matrix = Array(n).fill(Array(n).fill(EMPTY_CELL));
             var tds = document.querySelectorAll("td");
             for (let td of tds) {
-                td.className = "normalCell";
+                td.className = "td" + n;
             }
+        },
+
+        setDimensionTo3() {
+            this.dimension = 3;
+            this.resetBoard();
+        },
+
+        setDimensionTo4() {
+            this.dimension = 4;
+            this.resetBoard();
         },
 
         getModeSelected() {
@@ -381,8 +393,8 @@ let app = new Vue({
             <div id="table_div">
                 <table class="table-striped no-bordered" id="board">
                     <tbody>
-                        <tr v-for="i in dimension">
-                            <td class="normalCell" v-bind:id="(i-1)*dimension + j-1" v-on:click="playerTurn(i-1,j-1)" v-for="j in dimension">
+                        <tr :class="'tr' + dimension" v-for="i in dimension">
+                            <td :class="'td' + dimension" :id="(i-1)*dimension + j-1" v-on:click="playerTurn(i-1,j-1)" v-for="j in dimension">
                                 <img src="./images/X_symbol.png" alt="X_symbol" v-if="matrix[i-1][j-1] === 'X'">
                                 <img src="./images/O_symbol.png" alt="O_symbol" v-else-if="matrix[i-1][j-1] === 'O'">
                             </td>
@@ -392,7 +404,9 @@ let app = new Vue({
             </div>
             <footer>
                 <div>
-                    <button class="btn btn-warning" name="restart_game" type="button" v-on:click="resetBoard">Reiniciar partida</button>
+                    <button class="btn btn-warning" name="restart_game_3" type="button" v-on:click="setDimensionTo3">Reiniciar partida (3x3)</button>
+                    <div class="breaker"></div>
+                    <button class="btn btn-warning" name="restart_game_4" type="button" v-on:click="setDimensionTo4">Reiniciar partida (4x4)</button>
                 </div>
             </footer>
         </div>
